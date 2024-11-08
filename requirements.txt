@@ -1,6 +1,6 @@
 fastapi
 uvicorn
 databases
-mysql-connector-python
+aiomysql
 requests
 python-dotenv

@@ -1,5 +1,6 @@
 fastapi
 uvicorn
-python-dotenv
+databases
+mysql-connector-python
 requests
-python-multipart
+python-dotenv

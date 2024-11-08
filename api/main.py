@@ -1,78 +1,45 @@
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import RedirectResponse, HTMLResponse
-import requests
+from fastapi import FastAPI, Request, HTTPException 
+from fastapi.responses import RedirectResponse
+import httpx
 import os
-from databases import Database
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
 
 app = FastAPI()
 
-# Shopify credentials from environment variables
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
-SCOPES = "read_orders,read_products"
+SCOPES = "read_orders"
 REDIRECT_URI = os.getenv("REDIRECT_URI")
 
-# Database URL
-DATABASE_URL = os.getenv("DATABASE_URL")
-database = Database(DATABASE_URL)
-
-@app.on_event("startup")
-async def startup():
-    if not database.is_connected:
-        await database.connect()
-
-@app.on_event("shutdown")
-async def shutdown():
-    if database.is_connected:
-        await database.disconnect()
-
-@app.get("/", response_class=HTMLResponse)
-async def initiate_installation(request: Request):
-    shop = request.query_params.get("shop")
-    if not shop:
-        return HTMLResponse("<h1>Missing 'shop' parameter in the URL.</h1>", status_code=400)
-
-    auth_url = (
-        f"https://{shop}/admin/oauth/authorize?"
-        f"client_id={CLIENT_ID}&scope={SCOPES}&redirect_uri={REDIRECT_URI}"
+@app.get("/auth")
+async def auth():
+    shopify_auth_url = (
+        f"https://{YOUR_SHOP_NAME}.myshopify.com/admin/oauth/authorize?"
+        f"client_id={CLIENT_ID}&scope=read_products,write_products&redirect_uri={REDIRECT_URI}"
     )
-    return RedirectResponse(url=auth_url)
+    return RedirectResponse(shopify_auth_url)
 
 @app.get("/callback")
 async def callback(request: Request):
     code = request.query_params.get("code")
-    shop = request.query_params.get("shop")
-    if not code or not shop:
-        return {"error": "Required parameters missing"}
+    if not code:
+        raise HTTPException(status_code=400, detail="Authorization code not found")
 
-    token_response = requests.post(
-        f"https://{shop}/admin/oauth/access_token",
-        data={
-            "client_id": CLIENT_ID,
-            "client_secret": CLIENT_SECRET,
-            "code": code
-        }
-    )
+    token_url = f"https://{YOUR_SHOP_NAME}.myshopify.com/admin/oauth/access_token"
+    payload = {
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "code": code
+    }
 
-    if token_response.status_code == 200:
-        access_token = token_response.json().get('access_token')
-        await save_access_token(shop, access_token)
-        return {"message": "Successfully authenticated with Shopify!"}
+    async with httpx.AsyncClient() as client:
+        response = await client.post(token_url, data=payload)
+        if response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Failed to get access token")
 
-    return {"error": "Failed to get access token from Shopify"}
+        access_token = response.json().get("access_token")
 
-# Save access token to MySQL
-async def save_access_token(shop: str, token: str):
-    if not database.is_connected:
-        await database.connect()
-        
-    query = """
-    INSERT INTO shop_tokens (shop, access_token)
-    VALUES (:shop, :access_token)
-    ON DUPLICATE KEY UPDATE access_token = VALUES(access_token)
-    """
-    await database.execute(query, {"shop": shop, "access_token": token})
+    # Store access_token securely and redirect to the app's main interface
+    # Assuming you have some way of managing sessions for authenticated users
+    return RedirectResponse("https://datatram.ai/dashboard")
+
+# Additional routes and logic for your app

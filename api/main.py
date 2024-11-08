@@ -74,7 +74,7 @@ INSTALL_FORM_HTML = """
 <body>
     <div class="container">
         <h1>Connect Your Shopify Store</h1>
-        <form action="/install" method="post">
+        <form action="/" method="post">
             <label for="shop">Enter your Shopify store domain:</label>
             <input type="text" id="shop" name="shop" placeholder="example.myshopify.com" required>
             <button type="submit">Install App</button>
@@ -84,7 +84,7 @@ INSTALL_FORM_HTML = """
 </html>
 """
 
-@app.get("/install", response_class=HTMLResponse)
+@app.get("/", response_class=HTMLResponse)
 async def install_page(request: Request):
     # If installation is initiated from the Shopify App Store, Shopify will provide the shop parameter
     shop = request.query_params.get("shop")
@@ -99,7 +99,7 @@ async def install_page(request: Request):
     )
     return RedirectResponse(url=auth_url)
 
-@app.post("/install")
+@app.post("/")
 async def initiate_installation(shop: str = Form(...)):
     # Redirect to Shopify's OAuth page with the shop domain
     auth_url = (

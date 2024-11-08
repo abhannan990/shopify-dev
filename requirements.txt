@@ -4,3 +4,4 @@ databases
 aiomysql
 requests
 python-dotenv
+httpx

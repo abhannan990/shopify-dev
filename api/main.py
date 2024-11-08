@@ -65,9 +65,4 @@ async def callback(code: str, shop: str):
     store_info = store_info_response.json().get("shop", {})
 
     # Transform the response to match the desired format
-    return {
-        "message": "Successfully connected to Shopify",
-        "hostname": store_info.get("myshopify_domain"),
-        "password": access_token,
-        "api_key": CLIENT_ID
-    }
+    return RedirectResponse(url="https://datatram.ai")

@@ -11,7 +11,7 @@ app = FastAPI()
 
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
-SCOPES = "read_orders,read_products"  # Define scopes based on your needs
+SCOPES = "read_orders,read_products"  # Adjust scopes as needed
 REDIRECT_URI = os.getenv("REDIRECT_URI")
 
 # HTML template with CSS for the installation form
@@ -86,11 +86,13 @@ INSTALL_FORM_HTML = """
 
 @app.get("/install", response_class=HTMLResponse)
 async def install_page(request: Request):
+    # If installation is initiated from the Shopify App Store, Shopify will provide the shop parameter
     shop = request.query_params.get("shop")
     if not shop:
-        # Display form if shop parameter is missing
+        # Show the form for the user to enter their store domain if `shop` parameter is missing
         return INSTALL_FORM_HTML
-    # Redirect to the Shopify OAuth URL if the shop domain is provided
+    
+    # Redirect to Shopify OAuth page if shop parameter is provided
     auth_url = (
         f"https://{shop}/admin/oauth/authorize?"
         f"client_id={CLIENT_ID}&scope={SCOPES}&redirect_uri={REDIRECT_URI}"
